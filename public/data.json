@@ -1,0 +1,270 @@
+{
+  "formId": "userRegistration",
+  "title": "User Registration Form",
+  "fields": [
+    {
+      "id": "userType",
+      "type": "radio",
+      "name": "userType",
+      "label": "User Type",
+      "defaultValue": "individual",
+      "options": [
+        {"label": "Individual", "value": "individual"},
+        {"label": "Business", "value": "business"}
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Please select a user type"
+        }
+      ]
+    },
+    {
+      "id": "email",
+      "type": "email",
+      "name": "email",
+      "label": "Email Address",
+      "placeholder": "Enter your email",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Email is required"
+        },
+        {
+          "rule": "email",
+          "message": "Please enter a valid email address"
+        }
+      ]
+    },
+    {
+      "id": "password",
+      "type": "password",
+      "name": "password",
+      "label": "Password",
+      "placeholder": "Enter password",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Password is required"
+        },
+        {
+          "rule": "minLength",
+          "value": 8,
+          "message": "Password must be at least 8 characters"
+        }
+      ]
+    },
+    {
+      "id": "companyName",
+      "type": "text",
+      "name": "companyName",
+      "label": "Company Name",
+      "placeholder": "Enter company name",
+      "condition": {
+        "field": "{{userType}}",
+        "operator": "===",
+        "value": "business"
+      },
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Company name is required for business accounts"
+        }
+      ]
+    },
+    {
+      "id": "taxId",
+      "type": "text",
+      "name": "taxId",
+      "label": "Tax ID",
+      "placeholder": "Enter tax identification number",
+      "condition": {
+        "field": "{{userType}}",
+        "operator": "===",
+        "value": "business"
+      },
+      "validations": [
+        {
+          "rule": "pattern",
+          "value": "^[0-9]{2}-[0-9]{7}$",
+          "message": "Tax ID must be in format: XX-XXXXXXX"
+        }
+      ]
+    },
+    {
+      "id": "country",
+      "type": "select",
+      "name": "country",
+      "label": "Country",
+      "placeholder": "Select country",
+      "options": [
+        {"label": "United States", "value": "us"},
+        {"label": "Canada", "value": "ca"},
+        {"label": "United Kingdom", "value": "uk"}
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Please select a country"
+        }
+      ]
+    },
+    {
+      "id": "state",
+      "type": "select",
+      "name": "state",
+      "label": "State/Province",
+      "placeholder": "Select state",
+      "dependsOn": "country",
+      "condition": {
+        "field": "{{country}}",
+        "operator": "!==",
+        "value": ""
+      },
+      "options": [
+        {"label": "California", "value": "ca"},
+        {"label": "New York", "value": "ny"},
+        {"label": "Texas", "value": "tx"}
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Please select a state"
+        }
+      ]
+    },
+    {
+      "id": "city",
+      "type": "text",
+      "name": "city",
+      "label": "City",
+      "placeholder": "Enter city",
+      "dependsOn": "state",
+      "condition": {
+        "field": "{{state}}",
+        "operator": "!==",
+        "value": ""
+      },
+      "validations": [
+        {
+          "rule": "required",
+          "message": "City is required"
+        }
+      ]
+    },
+    {
+      "id": "zipCode",
+      "type": "text",
+      "name": "zipCode",
+      "label": "Zip Code",
+      "placeholder": "Enter zip code",
+      "dependsOn": "city",
+      "condition": {
+        "field": "{{city}}",
+        "operator": "!==",
+        "value": ""
+      },
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Zip code is required"
+        },
+        {
+          "rule": "pattern",
+          "value": "^[0-9]{5}$",
+          "message": "Zip code must be 5 digits"
+        }
+      ]
+    },
+    {
+      "id": "specialOffers",
+      "type": "checkbox",
+      "name": "specialOffers",
+      "label": "I want to receive special offers",
+      "defaultValue": false
+    },
+    {
+      "id": "offerType",
+      "type": "select",
+      "name": "offerType",
+      "label": "Type of Offers",
+      "placeholder": "Select offer type",
+      "condition": {
+        "field": "{{specialOffers}}",
+        "operator": "===",
+        "value": true
+      },
+      "options": [
+        {"label": "Email Only", "value": "email"},
+        {"label": "SMS Only", "value": "sms"},
+        {"label": "Both", "value": "both"}
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Please select offer type"
+        }
+      ]
+    },
+    {
+      "id": "adminCode",
+      "type": "text",
+      "name": "adminCode",
+      "label": "Admin Access Code",
+      "placeholder": "Enter admin code",
+      "condition": {
+        "field": "{{email}}",
+        "operator": "===",
+        "value": "admin@gmail.com"
+      },
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Admin code is required for admin email"
+        },
+        {
+          "rule": "minLength",
+          "value": 6,
+          "message": "Admin code must be at least 6 characters"
+        }
+      ]
+    },
+    {
+      "id": "age",
+      "type": "number",
+      "name": "age",
+      "label": "Age",
+      "placeholder": "Enter your age",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "Age is required"
+        },
+        {
+          "rule": "min",
+          "value": 18,
+          "message": "You must be at least 18 years old"
+        },
+        {
+          "rule": "max",
+          "value": 100,
+          "message": "Please enter a valid age"
+        }
+      ]
+    },
+    {
+      "id": "comments",
+      "type": "textarea",
+      "name": "comments",
+      "label": "Additional Comments",
+      "placeholder": "Enter any additional information",
+      "validations": [
+        {
+          "rule": "maxLength",
+          "value": 500,
+          "message": "Comments cannot exceed 500 characters"
+        }
+      ]
+    }
+  ]
+}
