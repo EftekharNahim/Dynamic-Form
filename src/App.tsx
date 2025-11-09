@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import "./App.css";
 import type {FormData} from '../utilities/types'
 import DynamicForm from "./DynamicForm/DynamicForm";
 function App() {

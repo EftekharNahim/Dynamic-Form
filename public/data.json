@@ -9,8 +9,8 @@
       "label": "User Type",
       "defaultValue": "individual",
       "options": [
-        {"label": "Individual", "value": "individual"},
-        {"label": "Business", "value": "business"}
+        { "label": "Individual", "value": "individual" },
+        { "label": "Business", "value": "business" }
       ],
       "validations": [
         {
@@ -98,9 +98,9 @@
       "label": "Country",
       "placeholder": "Select country",
       "options": [
-        {"label": "United States", "value": "us"},
-        {"label": "Canada", "value": "ca"},
-        {"label": "United Kingdom", "value": "uk"}
+        { "label": "United States", "value": "us" },
+        { "label": "Canada", "value": "ca" },
+        { "label": "United Kingdom", "value": "uk" }
       ],
       "validations": [
         {
@@ -113,24 +113,34 @@
       "id": "state",
       "type": "select",
       "name": "state",
-      "label": "State/Province",
-      "placeholder": "Select state",
+      "label": "State/Province/Region",
+      "placeholder": "Select state or region",
       "dependsOn": "country",
       "condition": {
         "field": "{{country}}",
         "operator": "!==",
         "value": ""
       },
-      "options": [
-        {"label": "California", "value": "ca"},
-        {"label": "New York", "value": "ny"},
-        {"label": "Texas", "value": "tx"}
-      ],
+      "dynamicOptions": {
+        "us": [
+          { "label": "California", "value": "ca" },
+          { "label": "New York", "value": "ny" },
+          { "label": "Texas", "value": "tx" }
+        ],
+        "ca": [
+          { "label": "Ontario", "value": "on" },
+          { "label": "Quebec", "value": "qc" },
+          { "label": "British Columbia", "value": "bc" }
+        ],
+        "uk": [
+          { "label": "England", "value": "eng" },
+          { "label": "Scotland", "value": "sco" },
+          { "label": "Wales", "value": "wal" },
+          { "label": "Northern Ireland", "value": "nir" }
+        ]
+      },
       "validations": [
-        {
-          "rule": "required",
-          "message": "Please select a state"
-        }
+        { "rule": "required", "message": "Please select a state or region" }
       ]
     },
     {
@@ -195,9 +205,9 @@
         "value": true
       },
       "options": [
-        {"label": "Email Only", "value": "email"},
-        {"label": "SMS Only", "value": "sms"},
-        {"label": "Both", "value": "both"}
+        { "label": "Email Only", "value": "email" },
+        { "label": "SMS Only", "value": "sms" },
+        { "label": "Both", "value": "both" }
       ],
       "validations": [
         {

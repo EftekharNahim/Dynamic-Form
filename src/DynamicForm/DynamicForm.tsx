@@ -9,6 +9,7 @@ interface DynamicFormProps {
 const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
   const [form] = Form.useForm();
   const [visibleFields, setVisibleFields] = useState<string[]>([]);
+  const [optionsState, setOptionsState] = useState<Record<string, any[]>>({});
 
   const evaluateConditions = (field: Field, values: any) => {
     if (field.dependsOn) {
@@ -57,49 +58,81 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
       .map((f) => f.name);
     setVisibleFields(initialVisible);
   }, [formData]);
-
+  //Recursive clearing helper
+  const clearChildrenRecursively = (
+    parentName: string,
+    cleared: Record<string, any>
+  ) => {
+    formData.fields.forEach((child) => {
+      if (child.dependsOn === parentName) {
+        cleared[child.name] = undefined;
+        setOptionsState((prev) => ({ ...prev, [child.name]: [] }));
+        clearChildrenRecursively(child.name, cleared);
+      }
+    });
+  };
+  /////when form field value changes
   const onValuesChange = (changedValues: any, allValues: any) => {
     const visible: string[] = formData.fields
       .filter((field) => evaluateConditions(field, allValues))
       .map((f) => f.name);
     setVisibleFields(visible);
 
-    //Clear dependent fields if parent changes
-    // formData.fields.forEach((f) => {
-    //   if (f.dependsOn && changedValues[f.dependsOn]) {
-    //     form.setFieldsValue({ [f.name]: undefined });
-    //   }
-    // });
+    const cleared: Record<string, any> = {};
 
     // Clear dependent child fields if parent value becomes null/empty
     formData.fields.forEach((f) => {
       if (f.dependsOn && changedValues.hasOwnProperty(f.dependsOn)) {
         const parentValue = allValues[f.dependsOn];
 
+        //  Handle dynamic options
+        if (f.dynamicOptions) {
+          const newOptions = parentValue
+            ? f.dynamicOptions[parentValue] || []
+            : [];
+          setOptionsState((prev) => ({ ...prev, [f.name]: newOptions }));
+          form.setFieldsValue({ [f.name]: undefined }); // clear selection
+        }
         // If parent is empty, null, undefined, or an empty array → clear child
-        if (
+        // Clear logic
+        const shouldClear =
           parentValue === undefined ||
           parentValue === null ||
           parentValue === "" ||
-          (Array.isArray(parentValue) && parentValue.length === 0)
-        ) {
-          form.setFieldsValue({ [f.name]: undefined });
+          (Array.isArray(parentValue) && parentValue.length === 0);
+
+        if (shouldClear) {
+          cleared[f.name] = undefined;
+          clearChildrenRecursively(f.name, cleared);
         } else {
-          // Optional: if parent changed to a new value, and this child is now hidden
-          // (because its condition is no longer true), clear it too.
-          if (!visible.includes(f.name)) {
-            form.setFieldsValue({ [f.name]: undefined });
-          }
+          // Even if parent has value, clear children if options changed
+          cleared[f.name] = undefined;
+          clearChildrenRecursively(f.name, cleared);
         }
       }
     });
+    // 🧽 Remove hidden field values
+    formData.fields.forEach((f) => {
+      if (!visible.includes(f.name)) cleared[f.name] = undefined;
+    });
+
+    if (Object.keys(cleared).length > 0) {
+      form.setFieldsValue(cleared);
+      const updatedValues = { ...allValues, ...cleared };
+      const updatedVisible = formData.fields
+        .filter((field) => evaluateConditions(field, updatedValues))
+        .map((f) => f.name);
+      setVisibleFields(updatedVisible);
+    }
+    else setVisibleFields(visible);
   };
 
   const onFinish = (values: any) => {
     console.log("Form Submitted:", values);
+    form.resetFields();
   };
 
- // console.log(formData);
+  // console.log(formData);
   return (
     <div>
       <Form
@@ -110,7 +143,6 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
         style={{ maxWidth: 800 }}
         onValuesChange={onValuesChange}
         onFinish={onFinish}
-       
       >
         {formData.fields.map((field: Field) => {
           if (!visibleFields.includes(field.name)) return null;
@@ -146,7 +178,8 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
                   <Input.TextArea placeholder={field.placeholder} />
                 </Form.Item>
               );
-            case "select":
+            case "select": {
+              const options = optionsState[field.name] || field.options || []; // dynamic options override static ones
               return (
                 <Form.Item
                   key={field.id}
@@ -157,8 +190,11 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
                     message: v.message,
                   }))}
                 >
-                  <Select placeholder={field.placeholder} defaultValue={field.defaultValue}>
-                    {field.options?.map((opt) => (
+                  <Select
+                    placeholder={field.placeholder}
+                    defaultValue={field.defaultValue}
+                  >
+                    {options?.map((opt) => (
                       <Select.Option value={opt.value}>
                         {opt.label}
                       </Select.Option>
@@ -166,7 +202,9 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
                   </Select>
                 </Form.Item>
               );
-            case "radio":
+            }
+            case "radio": {
+              const options = optionsState[field.name] || field.options || []; // dynamic options override static ones
               return (
                 <Form.Item
                   key={field.id}
@@ -178,12 +216,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
                   }))}
                 >
                   <Radio.Group defaultValue={field.defaultValue}>
-                    {field.options?.map((opt) => (
+                    {options?.map((opt) => (
                       <Radio value={opt.value}>{opt.label}</Radio>
                     ))}
                   </Radio.Group>
                 </Form.Item>
               );
+            }
             case "checkbox":
               return (
                 <Form.Item

@@ -20,6 +20,7 @@ export type Field ={
   validations?: Validation[];
   condition?: Condition;
   dependsOn?: string;
+  dynamicOptions?: [];
 }
 export type FormData ={
   formId: string;
