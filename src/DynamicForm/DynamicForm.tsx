@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Form, Input, Button, Select, Radio, Checkbox } from "antd";
+import { Form, Input, Button, Select, Radio, Checkbox, message } from "antd";
 import type { FormData, Field } from "../../utilities/types";
 
 interface DynamicFormProps {
@@ -10,6 +10,8 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
   const [form] = Form.useForm();
   const [visibleFields, setVisibleFields] = useState<string[]>([]);
   const [optionsState, setOptionsState] = useState<Record<string, any[]>>({});
+  const [loading, setLoading] = useState(false); // ✅ New loading state
+  const [messageApi, contextHolder] = message.useMessage(); // ✅ Hook-based message
 
   const evaluateConditions = (field: Field, values: any) => {
     if (field.dependsOn) {
@@ -57,7 +59,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
       .filter((field) => evaluateConditions(field, {}))
       .map((f) => f.name);
     setVisibleFields(initialVisible);
-  }, [formData]);
+  }, []);
   //Recursive clearing helper
   const clearChildrenRecursively = (
     parentName: string,
@@ -123,18 +125,25 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
         .filter((field) => evaluateConditions(field, updatedValues))
         .map((f) => f.name);
       setVisibleFields(updatedVisible);
-    }
-    else setVisibleFields(visible);
+    } else setVisibleFields(visible);
   };
 
   const onFinish = (values: any) => {
     console.log("Form Submitted:", values);
-    form.resetFields();
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      messageApi.success("Form submitted successfully!");
+      form.resetFields();
+      const allValues = form.getFieldsValue();
+      onValuesChange({}, allValues);
+    }, 2000);
   };
 
   // console.log(formData);
   return (
     <div>
+      {contextHolder}
       <Form
         form={form}
         name="basic"
@@ -157,17 +166,38 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
                   label={field.label}
                   name={field.name}
                   initialValue={field.defaultValue}
-                  rules={field.validations?.map((v) => ({
-                    required: v.rule === "required",
-                    min: v.rule === "minLength" ? Number(v.value) : undefined,
-                    max: v.rule === "maxLength" ? Number(v.value) : undefined,
-                    pattern:
-                      v.rule === "pattern"
-                        ? new RegExp(v.value as string)
-                        : undefined,
-                    type: v.rule === "email" ? "email" : undefined,
-                    message: v.message,
-                  }))}
+                  rules={field.validations?.map((v) => {
+                    if (v.rule === "required")
+                      return { required: true, message: v.message };
+                    if (v.rule === "email")
+                      return { type: "email", message: v.message };
+                    if (v.rule === "pattern")
+                      return {
+                        pattern: new RegExp(v.value as string),
+                        message: v.message,
+                      };
+                    if (v.rule === "minLength")
+                      return { min: Number(v.value), message: v.message };
+                    if (v.rule === "maxLength")
+                      return { max: Number(v.value), message: v.message };
+
+                    // ✅ Numeric min/max validation
+                    if (v.rule === "min" || v.rule === "max") {
+                      return {
+                        validator: (_: any, value: any) => {
+                          if (!value && value !== 0) return Promise.resolve();
+                          const num = Number(value);
+                          if (v.rule === "min" && num < Number(v.value))
+                            return Promise.reject(new Error(v.message));
+                          if (v.rule === "max" && num > Number(v.value))
+                            return Promise.reject(new Error(v.message));
+                          return Promise.resolve();
+                        },
+                      };
+                    }
+
+                    return {};
+                  })}
                 >
                   <Input type={field.type} placeholder={field.placeholder} />
                 </Form.Item>
@@ -195,7 +225,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
                     defaultValue={field.defaultValue}
                   >
                     {options?.map((opt) => (
-                      <Select.Option value={opt.value}>
+                      <Select.Option key={opt.value} value={opt.value}>
                         {opt.label}
                       </Select.Option>
                     ))}
@@ -210,14 +240,17 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
                   key={field.id}
                   label={field.label}
                   name={field.name}
+                  initialValue={field.defaultValue}
                   rules={field.validations?.map((v) => ({
                     required: v.rule === "required",
                     message: v.message,
                   }))}
                 >
-                  <Radio.Group defaultValue={field.defaultValue}>
+                  <Radio.Group>
                     {options?.map((opt) => (
-                      <Radio value={opt.value}>{opt.label}</Radio>
+                      <Radio key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </Radio>
                     ))}
                   </Radio.Group>
                 </Form.Item>
@@ -237,8 +270,8 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formData }) => {
           }
         })}
         <Form.Item className="flex justify-center">
-          <Button type="primary" htmlType="submit">
-            Submit
+          <Button type="primary" htmlType="submit" loading={loading}>
+            {loading ? "Submitting..." : "Submit"}
           </Button>
         </Form.Item>
       </Form>
